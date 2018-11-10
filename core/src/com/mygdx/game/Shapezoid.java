@@ -39,6 +39,7 @@ public class Shapezoid extends ApplicationAdapter implements InputProcessor {
     
     @Override
     public void create() {
+        
         // Cria a câmera com um campo de visão e tamanho da tela;
         camera = new PerspectiveCamera(75, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         // Define a posição da câmera (3 afastado em Z da origem);
@@ -71,12 +72,12 @@ public class Shapezoid extends ApplicationAdapter implements InputProcessor {
 
     @Override
     public void render() {
-        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT|GL20.GL_DEPTH_BUFFER_BIT);
         
         camera.update();
         modelBatch.begin(camera);
-        modelBatch.render(modelInstance);
+        modelBatch.render(modelInstance, environment);
         modelBatch.end();
     }
     
