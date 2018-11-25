@@ -39,7 +39,7 @@ public class ScreenMainMenu implements Screen {
         game.batch.end();
 
         if (Gdx.input.isTouched()) {
-            game.setScreen(new Shapezoid(game));
+            game.setScreen(new Shapezoid());
             dispose();
         }
     }
