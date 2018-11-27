@@ -36,7 +36,12 @@ import com.badlogic.gdx.physics.bullet.collision.btDispatcher;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcherInfo;
 import com.badlogic.gdx.physics.bullet.collision.btManifoldResult;
 import com.badlogic.gdx.physics.bullet.collision.btPersistentManifold;
-import com.badlogic.gdx.physics.bullet.collision.btSphereShape;
+import com.badlogic.gdx.physics.bullet.dynamics.btConstraintSolver;
+import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld;
+import com.badlogic.gdx.physics.bullet.dynamics.btDynamicsWorld;
+import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
+import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody.btRigidBodyConstructionInfo;
+import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ArrayMap;
 import com.badlogic.gdx.utils.Disposable;
@@ -45,22 +50,21 @@ import com.badlogic.gdx.utils.Disposable;
  * @author GuiDB
  */
 public class Shapezoid implements ApplicationListener, Screen {
-    
+
     // ##### CONSTANTES #####
-    final static short GROUND_FLAG = 1<<8;
-    final static short OBJECT_FLAG = 1<<9;
+    final static short GROUND_FLAG = 1 << 8;
+    final static short OBJECT_FLAG = 1 << 9;
     final static short ALL_FLAG = -1;
 
     // ##### CLASSES ESTÁTICAS GameObject E Constructor #####
     static class GameObject extends ModelInstance implements Disposable {
 
-        public final btCollisionObject body;
+        public final btRigidBody body;
         public boolean moving;
 
-        public GameObject(Model model, String node, btCollisionShape shape) {
+        public GameObject(Model model, String node, btRigidBodyConstructionInfo constructionInfo) {
             super(model, node);
-            body = new btCollisionObject();
-            body.setCollisionShape(shape);
+            body = new btRigidBody(constructionInfo);
         }
 
         @Override
@@ -73,20 +77,29 @@ public class Shapezoid implements ApplicationListener, Screen {
             public final Model model;
             public final String node;
             public final btCollisionShape shape;
+            public final btRigidBodyConstructionInfo constructionInfo;
+            private static Vector3 localInertia = new Vector3();
 
-            public Constructor(Model model, String node, btCollisionShape shape) {
+            public Constructor(Model model, String node, btCollisionShape shape, float mass) {
                 this.model = model;
                 this.node = node;
                 this.shape = shape;
+                if (mass > 0f) {
+                    shape.calculateLocalInertia(mass, localInertia);
+                } else {
+                    localInertia.set(0, 0, 0);
+                }
+                this.constructionInfo = new btRigidBody.btRigidBodyConstructionInfo(mass, null, shape, localInertia);
             }
 
             public GameObject construct() {
-                return new GameObject(model, node, shape);
+                return new GameObject(model, node, constructionInfo);
             }
 
             @Override
             public void dispose() {
                 shape.dispose();
+                constructionInfo.dispose();
             }
         }
     }
@@ -96,10 +109,11 @@ public class Shapezoid implements ApplicationListener, Screen {
         @Override
         public boolean onContactAdded(int userValue0, int partId0, int index0,
                 int userValue1, int partId1, int index1) {
-            if (userValue1 == 0)
+            if (userValue1 == 0) {
                 instances.get(userValue0).moving = false;
-            else if (userValue0 == 0)
+            } else if (userValue0 == 0) {
                 instances.get(userValue1).moving = false;
+            }
             return true;
         }
     }
@@ -123,6 +137,8 @@ public class Shapezoid implements ApplicationListener, Screen {
     // Sons do jogo;
     //private Music backgroundMusic;
     Vector3 playerSize = new Vector3(2f, 2f, 2f);
+    Vector3 enemyBoxSize = new Vector3(2f, 2f, 2f);
+    Vector3 enemyPyramidSize = new Vector3(1f, 2f, 1f);
     Vector3 groundSize = new Vector3(50f, 1f, 50f);
     Vector3 wallNorthSouthSize = new Vector3(50f, 10f, 1f);
     Vector3 wallEastWestSize = new Vector3(1f, 10f, 50f);
@@ -162,9 +178,12 @@ public class Shapezoid implements ApplicationListener, Screen {
     btPersistentManifold manifold;
 
     MyContactListener contactListener;
-    
+
     btBroadphaseInterface broadphase;
     btCollisionWorld collisionWorld;
+
+    btDynamicsWorld dynamicsWorld;
+    btConstraintSolver constraintSolver;
 
     CameraInputController camController;
 
@@ -221,7 +240,7 @@ public class Shapezoid implements ApplicationListener, Screen {
     }
      */
 
-    /*
+ /*
     void checkInput() {
         // Verifica o clique do mouse (botão esquerdo) ou o touch na tela (touchscreen);
         if (Gdx.input.isTouched()) {
@@ -250,18 +269,26 @@ public class Shapezoid implements ApplicationListener, Screen {
     }
      */
     public void spawn() {
+        /*
         GameObject obj = constructors.values[1 + MathUtils.random(constructors.size - 2)].construct();
         obj.moving = true;
         obj.transform.setFromEulerAngles(MathUtils.random(360f), MathUtils.random(360f), MathUtils.random(360f));
         obj.transform.trn(MathUtils.random(-groundSize.x / 2, groundSize.x / 2), 10f, MathUtils.random(-groundSize.z / 2, groundSize.z / 2));
         obj.body.setWorldTransform(obj.transform);
-        
         obj.body.setUserValue(instances.size);
         obj.body.setCollisionFlags(obj.body.getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
-        
         instances.add(obj);
-        
         collisionWorld.addCollisionObject(obj.body, OBJECT_FLAG, GROUND_FLAG);
+         */
+
+        GameObject obj = constructors.values[1 + MathUtils.random(constructors.size - 2)].construct();
+        obj.transform.setFromEulerAngles(MathUtils.random(360f), MathUtils.random(360f), MathUtils.random(360f));
+        obj.transform.trn(MathUtils.random(-groundSize.x / 2, groundSize.x / 2), 10f, MathUtils.random(-groundSize.z / 2, groundSize.z / 2));
+        obj.body.setWorldTransform(obj.transform);
+        obj.body.setUserValue(instances.size);
+        obj.body.setCollisionFlags(obj.body.getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
+        instances.add(obj);
+        dynamicsWorld.addRigidBody(obj.body, OBJECT_FLAG, GROUND_FLAG);
     }
 
     // ##### INTERFACE ApplicationListener #####
@@ -297,13 +324,25 @@ public class Shapezoid implements ApplicationListener, Screen {
 
         modelBuilder.begin();
 
+        /*
         modelBuilder.node().id = "sphere";
         modelBuilder.part("sphere", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.GREEN)))
                 .sphere(1f, 1f, 1f, 10, 10);
-
+         */
         modelBuilder.node().id = "player";
         modelBuilder.part("player", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.BLUE)))
                 .sphere(playerSize.x, playerSize.y, playerSize.z, 10, 10);
+        modelBuilder.node().id = "enemyBox";
+        modelBuilder.part("enemyBox", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.BLUE)))
+                .box(2f, 2f, 2f);
+        modelBuilder.node().id = "enemyPyramid";
+        modelBuilder.part("enemyPyramid", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.BLUE)))
+                .box(1f, 2f, 1f);
+        modelBuilder.node().id = "ground";
+        modelBuilder.part("ground", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.BROWN)))
+                .box(groundSize.x, groundSize.y, groundSize.z);
+
+        /*
         modelBuilder.node().id = "ground";
         modelBuilder.part("ground", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.DARK_GRAY)))
                 .box(groundSize.x, groundSize.y, groundSize.z);
@@ -313,7 +352,7 @@ public class Shapezoid implements ApplicationListener, Screen {
         modelBuilder.node().id = "wallEastWest";
         modelBuilder.part("wallEastWest", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(Color.BROWN)))
                 .box(wallEastWestSize.x, wallEastWestSize.y, wallEastWestSize.z);
-
+         */
         // ALL BULLET SHAPES;
         /*
         mb.node().id = "ground";
@@ -344,12 +383,33 @@ public class Shapezoid implements ApplicationListener, Screen {
         this.setObjects();
          */
         constructors = new ArrayMap<String, GameObject.Constructor>(String.class, GameObject.Constructor.class);
+        constructors.put("ground", new GameObject.Constructor(model, "ground",
+                new btBoxShape(new Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)), 0f));
 
+        constructors.put("enemyBox", new GameObject.Constructor(model, "enemyBox", 
+                new btBoxShape(new Vector3(enemyBoxSize.x / 2, enemyBoxSize.y / 2, enemyBoxSize.z / 2)), 1f));
+        constructors.put("enemyPyramid", new GameObject.Constructor(model, "enemyPyramid", 
+                new btBoxShape(new Vector3(enemyBoxSize.x / 2, enemyBoxSize.y / 2, enemyBoxSize.z / 2)), 1f));
+
+        /*
+        constructors.put("player", new GameObject.Constructor(model, "player", 
+                new btSphereShape(playerSize.x / 2), 1f));
+        constructors.put("ground", new GameObject.Constructor(model, "ground", 
+                new btBoxShape(new Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)), 0f));
+         */
+ /*
+        constructors.put("sphere", new GameObject.Constructor(model, "sphere", new btSphereShape(0.5f), 1f));
+        constructors.put("box", new GameObject.Constructor(model, "box", new btBoxShape(new Vector3(0.5f, 0.5f, 0.5f)), 1f));
+        constructors.put("cone", new GameObject.Constructor(model, "cone", new btConeShape(0.5f, 2f), 1f));
+        constructors.put("capsule", new GameObject.Constructor(model, "capsule", new btCapsuleShape(.5f, 1f), 1f));
+        constructors.put("cylinder", new GameObject.Constructor(model, "cylinder", new btCylinderShape(new Vector3(.5f, 1f, .5f)), 1f));
+         */
+
+ /*
+        constructors = new ArrayMap<String, GameObject.Constructor>(String.class, GameObject.Constructor.class);
         constructors.put("sphere", new GameObject.Constructor(model, "sphere", new btSphereShape(0.5f)));
-
         constructors.put("player", new GameObject.Constructor(model, "player",
                 new btSphereShape(playerSize.x / 2)));
-        /*
         constructors.put("ground", new GameObject.Constructor(model, "ground",
                 new btBoxShape(new Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2))));
         constructors.put("wallNorthSouth", new GameObject.Constructor(model, "wallNorthSouth",
@@ -357,14 +417,13 @@ public class Shapezoid implements ApplicationListener, Screen {
         constructors.put("wallEastWest", new GameObject.Constructor(model, "wallEastWest",
                 new btBoxShape(new Vector3(wallEastWestSize.x / 2, wallEastWestSize.y / 2, wallEastWestSize.z / 2))));
          */
-        /*
+ /*
         instances = new Array<GameObject>();
         //instances.add(constructors.get("player").construct());
         instances.add(constructors.get("ground").construct());
         instances.add(constructors.get("wallNorthSouth").construct());
         instances.add(constructors.get("wallEastWest").construct());
          */
-        
         // ALL BULLET OBJECT CONSTRUCTORS;
         /*
         constructors.put("ground", new GameObject.Constructor(model, "ground", new btBoxShape(new Vector3(2.5f, 0.5f, 2.5f))));
@@ -393,19 +452,32 @@ public class Shapezoid implements ApplicationListener, Screen {
         dispatcher = new btCollisionDispatcher(collisionConfig);
 
         contactListener = new MyContactListener();
-        
+
+        /*
         collisionConfig = new btDefaultCollisionConfiguration();
         dispatcher = new btCollisionDispatcher(collisionConfig);
         broadphase = new btDbvtBroadphase();
         collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfig);
         contactListener = new MyContactListener();
 
-        
         instances = new Array<GameObject>();
         GameObject object = constructors.get("ground").construct();
         instances.add(object);
         
         collisionWorld.addCollisionObject(object.body, GROUND_FLAG, ALL_FLAG);
+         */
+        collisionConfig = new btDefaultCollisionConfiguration();
+        dispatcher = new btCollisionDispatcher(collisionConfig);
+        broadphase = new btDbvtBroadphase();
+        constraintSolver = new btSequentialImpulseConstraintSolver();
+        dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig);
+        dynamicsWorld.setGravity(new Vector3(0, -10f, 0));
+        contactListener = new MyContactListener();
+
+        instances = new Array<GameObject>();
+        GameObject object = constructors.get("ground").construct();
+        instances.add(object);
+        dynamicsWorld.addRigidBody(object.body, GROUND_FLAG, ALL_FLAG);
 
         camController = new CameraInputController(perspectiveCamera);
         Gdx.input.setInputProcessor(camController);
@@ -417,6 +489,7 @@ public class Shapezoid implements ApplicationListener, Screen {
 
     @Override
     public void render() {
+        /*
         final float delta = Math.min(1f / 30f, Gdx.graphics.getDeltaTime());
 
         for (GameObject obj : instances) {
@@ -425,9 +498,17 @@ public class Shapezoid implements ApplicationListener, Screen {
                 obj.body.setWorldTransform(obj.transform);
             }
         }
-        
-        collisionWorld.performDiscreteCollisionDetection();
 
+        collisionWorld.performDiscreteCollisionDetection();
+         */
+        
+        final float delta = Math.min(1f / 30f, Gdx.graphics.getDeltaTime());
+
+        dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
+
+        for (GameObject obj : instances)
+            obj.body.getWorldTransform(obj.transform);
+        
         if ((spawnTimer -= delta) < 0) {
             spawn();
             spawnTimer = 1.5f;
@@ -492,11 +573,13 @@ public class Shapezoid implements ApplicationListener, Screen {
 
         //instances.clear();
         //backgroundMusic.dispose();
-        
         contactListener.dispose();
-        
+
         collisionWorld.dispose();
         broadphase.dispose();
+        
+        dynamicsWorld.dispose();
+        constraintSolver.dispose();
     }
 
     // ##### INTERFACE Screen #####
