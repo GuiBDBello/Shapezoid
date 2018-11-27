@@ -4,6 +4,7 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.mygdx.game.MainMenu;
 import com.mygdx.game.Shapezoid;
+import com.mygdx.game.BulletTest;
 
 public class DesktopLauncher {
 

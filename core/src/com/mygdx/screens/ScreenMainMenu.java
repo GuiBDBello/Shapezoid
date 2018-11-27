@@ -22,6 +22,7 @@ public class ScreenMainMenu implements Screen {
         camera.setToOrtho(false, 1280, 720);
     }
 
+    // ##### INTERFACE Screen #####
     @Override
     public void render(float delta) {
         // Limpa a tela;
@@ -43,8 +44,6 @@ public class ScreenMainMenu implements Screen {
             dispose();
         }
     }
-    
-    // ######################### UNUSED #########################;
 
     @Override
     public void show() {
