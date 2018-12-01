@@ -54,13 +54,13 @@ import com.badlogic.gdx.utils.Disposable;
  */
 public class Shapezoid extends Game {
 
-    public SpriteBatch batch;
-    public BitmapFont font;
+    public SpriteBatch spriteBatch;
+    public BitmapFont bitmapFont;
 
     public void create() {
-        batch = new SpriteBatch();
+        spriteBatch = new SpriteBatch();
         //Use LibGDX's default Arial font.
-        font = new BitmapFont();
+        bitmapFont = new BitmapFont();
         this.setScreen(new ScreenGame(this));
     }
 
@@ -69,7 +69,7 @@ public class Shapezoid extends Game {
     }
 
     public void dispose() {
-        batch.dispose();
-        font.dispose();
+        spriteBatch.dispose();
+        bitmapFont.dispose();
     }
 }

@@ -119,12 +119,11 @@ public class ScreenGame implements Screen {
             // O primeiro objeto é o chão;
             if (match0) {
                 ((ColorAttribute) instances.get(userValue0).materials.get(0).get(ColorAttribute.Diffuse)).color.set(Color.BLACK);
-                gameOver();
+                setGameOver(true);
             }
-            /*
             if (match1) {
-                ((ColorAttribute) instances.get(userValue1).materials.get(0).get(ColorAttribute.Diffuse)).color.set(Color.RED);
-            }*/
+                //((ColorAttribute) instances.get(userValue1).materials.get(0).get(ColorAttribute.Diffuse)).color.set(Color.RED);
+            }
             return true;
         }
     }
@@ -192,7 +191,7 @@ public class ScreenGame implements Screen {
         modelBuilder.part("ground", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, new Material(ColorAttribute.createDiffuse(0.2f, 0.5f, 0.2f, 0.75f)))
                 .box(groundSize.x, groundSize.y, groundSize.z);
         model = modelBuilder.end();
-        
+
         spriteBatch = new SpriteBatch();
         bitmapFont = new BitmapFont();
 
@@ -202,14 +201,14 @@ public class ScreenGame implements Screen {
                 new btBoxShape(new Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)), 0f));
 
         constructors.put("enemyBox", new GameObject.Constructor(model, "enemyBox",
-                new btBoxShape(new Vector3(enemyBoxSize.x / 2, enemyBoxSize.y / 2, enemyBoxSize.z / 2)), 1f));
+                new btBoxShape(new Vector3(enemyBoxSize.x / 2, enemyBoxSize.y / 2, enemyBoxSize.z / 2)), 2f));
         constructors.put("enemyPyramid", new GameObject.Constructor(model, "enemyPyramid",
                 new btBoxShape(new Vector3(enemyPyramidSize.x / 2, enemyPyramidSize.y / 2, enemyPyramidSize.z / 2)), 1f));
 
         playerConstructor = new ArrayMap<String, GameObject.Constructor>(String.class, GameObject.Constructor.class);
         playerConstructor.put("player", new GameObject.Constructor(model, "player",
                 new btSphereShape(playerSize.x / 2), 1f));
-        
+
         // ##### Áudio #####
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("data/cnupoc__main-theme.mp3"));
         // Define se a música tocará em loop;
@@ -244,6 +243,8 @@ public class ScreenGame implements Screen {
         //obj.body.setContactCallbackFilter(GROUND_FLAG | WALL_FLAG);
         object.body.setActivationState(Collision.DISABLE_DEACTIVATION);
 
+        prefs = Gdx.app.getPreferences("shapezoid");
+        this.highscore = prefs.getFloat("highscore", 0);
         this.spawnPlayer();
     }
 
@@ -275,6 +276,7 @@ public class ScreenGame implements Screen {
 
     float angle, speed = 90f;
     float score, highscore;
+    Preferences prefs;
 
     Array<GameObject> instances;
     ArrayMap<String, GameObject.Constructor> constructors;
@@ -307,6 +309,9 @@ public class ScreenGame implements Screen {
         // Verifica o clique do mouse (botão esquerdo) ou o touch na tela (touchscreen);
         if (Gdx.input.isTouched()) {
             System.out.println("Clicou no pixel X =" + Gdx.input.getX() + " e Y =" + Gdx.input.getY());
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            gameOver();
         }
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit();
@@ -358,18 +363,16 @@ public class ScreenGame implements Screen {
         playerGameObject.body.setContactCallbackFilter(OBJECT_FLAG);
     }
 
-    private void gameOver() {
-        this.setGameOver(true);
-        
-        Preferences prefs = Gdx.app.getPreferences("shapezoid");
-        this.highscore = prefs.getFloat("highscore", 0);
-        
+    public void gameOver() {
         if (score > highscore) {
             prefs.putFloat("highscore", score);
             prefs.flush();
         }
+
+        dispose();
+        game.setScreen(new ScreenGame(game));
     }
-    
+
     // ##### INTERFACE Screen #####
     @Override
     public void render(float f) {
@@ -379,12 +382,12 @@ public class ScreenGame implements Screen {
 
         angle = (angle + delta * speed) % 360f;
         instances.get(0).transform.setTranslation(0, MathUtils.sinDeg(angle) * 2.5f, 0f);
-        
+
         if ((spawnTimer -= delta) < 0) {
             spawnEnemy();
             spawnTimer = 0.1f;
         }
-        
+
         dynamicsWorld.stepSimulation(delta, 5, 1 / 60f);
 
         //Gdx.gl20.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -405,18 +408,19 @@ public class ScreenGame implements Screen {
             spriteBatch.begin();
             bitmapFont.draw(spriteBatch, "Avoid sharp objects!", Gdx.graphics.getWidth() / 10, Gdx.graphics.getHeight() - 50);
             bitmapFont.draw(spriteBatch, "Score: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 2.2f, Gdx.graphics.getHeight() - 50);
-            bitmapFont.draw(spriteBatch, "HighScore: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 1.33f, Gdx.graphics.getHeight() - 50);
+            bitmapFont.draw(spriteBatch, "HighScore: " + Math.round(this.prefs.getFloat("highscore") * 100.0) / 100.0, Gdx.graphics.getWidth() / 1.33f, Gdx.graphics.getHeight() - 50);
             spriteBatch.end();
         } else {
+            game.spriteBatch.begin();
             spriteBatch.begin();
-            bitmapFont.draw(spriteBatch, "You died!", Gdx.graphics.getWidth() / 10, Gdx.graphics.getHeight() - 50);
-            bitmapFont.draw(spriteBatch, "Score: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 2.2f, Gdx.graphics.getHeight() - 50);
-            bitmapFont.draw(spriteBatch, "HighScore: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 1.33f, Gdx.graphics.getHeight() - 50);
-            bitmapFont.draw(spriteBatch, "HighScore: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 1.33f, Gdx.graphics.getHeight() - 50);
+            bitmapFont.draw(spriteBatch, "You died! Press 'R' to Restart", Gdx.graphics.getWidth() / 2 - 90, Gdx.graphics.getHeight() / 1.8f);
+            bitmapFont.draw(spriteBatch, "Score: " + Math.round(this.score * 100.0) / 100.0, Gdx.graphics.getWidth() / 2 - 37.5f, Gdx.graphics.getHeight() / 2);
+            bitmapFont.draw(spriteBatch, "HighScore: " + Math.round(this.highscore * 100.0) / 100.0, Gdx.graphics.getWidth() / 2 - 50, Gdx.graphics.getHeight() / 2.2f);
             spriteBatch.end();
+            game.spriteBatch.end();
         }
     }
-    
+
     @Override
     public void show() {
     }
@@ -424,7 +428,7 @@ public class ScreenGame implements Screen {
     @Override
     public void hide() {
     }
-    
+
     @Override
     public void resize(int i, int i1) {
     }
@@ -439,15 +443,18 @@ public class ScreenGame implements Screen {
 
     @Override
     public void dispose() {
-        for (GameObject obj : instances) {
-            obj.dispose();
+        for (GameObject gameObject : instances) {
+            gameObject.dispose();
         }
         instances.clear();
 
-        for (GameObject.Constructor ctor : constructors.values()) {
-            ctor.dispose();
+        for (GameObject.Constructor constructor : constructors.values()) {
+            constructor.dispose();
         }
         constructors.clear();
+        //environment.clear();
+        playerGameObject.dispose();
+        playerConstructor.clear();
 
         dispatcher.dispose();
         collisionConfig.dispose();
@@ -457,14 +464,17 @@ public class ScreenGame implements Screen {
 
         backgroundMusic.dispose();
 
-        spriteBatch.dispose();
-        bitmapFont.dispose();
-
         contactListener.dispose();
-
         broadphase.dispose();
 
-        dynamicsWorld.dispose();
+        bitmapFont.dispose();
+
         constraintSolver.dispose();
+
+        /*
+        spriteBatch.dispose();
+
+        dynamicsWorld.dispose();
+         */
     }
 }
