@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="screenshots/shapezoid_cover_title.png">
+</p>
+<p align="center">
   <img src="screenshots/shapezoid.gif">
 </p>
 
@@ -19,7 +22,7 @@ Theme: **HYBRID**.
 
 ## Setup
 
-**Obs.:** This tutorial is for *Windows* operational systems.
+**Obs.:** This setup is ready for *Windows* operational systems.
 
 ### Installation
 
@@ -32,8 +35,8 @@ Theme: **HYBRID**.
 #### Eclipse
 
 1. `Right click your desktop project > Run as > Run Configurations...`.
-2. Select `Java Application` and in the top left click the icon `New launch configuration`.
-3. As *Main class* select `DesktopLauncher.java`.
+2. Select `Java Application` and in the top left, click the icon `New launch configuration`.
+3. As `Main class` select `DesktopLauncher.java`.
 4. Run your configuration.
 
 ### Build
@@ -42,7 +45,7 @@ Theme: **HYBRID**.
 
 #### Windows
 
-- Open the *Command Prompt*.
+- Open the `Command Prompt` (`Ctrl + R`, type `cmd` and press `Enter`).
 - Navigate to the project folder.
 - Execute the command `gradlew desktop:dist`. Inside the `desktop` folder will be generated the folder `build`.
 - On `build/libs/`, double-click `desktop-1.0.jar`.
