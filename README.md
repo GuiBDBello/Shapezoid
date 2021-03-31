@@ -10,6 +10,11 @@ Game page on itch.io: https://guibdbello.itch.io/shapezoid
   <img src="screenshots/shapezoid.gif">
 </p>
 
+### How to Play
+
+- Use the arrow keys to move the player.
+- Press `R` to restart the game.
+
 ## About
 
 Control a sphere to avoid geometric 'evil' objects.
@@ -18,7 +23,7 @@ In a world of harmony, where every object has at least a vertex, a Sphere is bor
 
 ### Game Jam
 
-Game made for the Game Jam **Game Off 2018** between 1st of November and 1st of December.
+This game was made for the game jam [**Game Off 2018**](https://itch.io/jam/game-off-2018), which took place between 1st of November and 1st of December of 2018.
 
 Theme: **HYBRID**.
 
@@ -45,8 +50,7 @@ Theme: **HYBRID**.
 
 **Obs.:** This project is not built for *Android* nor *iOS*, only for *Windows*.
 
-- Open the `Command Prompt` (`Ctrl + R`, type `cmd` and press `Enter`).
-- Navigate to the project folder.
-- Execute the command `gradlew desktop:dist`. Inside the `desktop` folder will be generated the folder `build`.
-- On `build/libs/`, double-click `desktop-1.0.jar`.
-- Enjoy!
+1. Open the `Command Prompt` (`Ctrl + R`, type `cmd` and press `Enter`).
+2. Navigate to the project folder.
+3. Execute the command `gradlew desktop:dist`. Inside the `desktop` folder will be generated the folder `build`.
+4. On `build/libs/`, a file will be generated, `desktop-1.0.jar`. You can rename the file and distribute this file to other people to play.
