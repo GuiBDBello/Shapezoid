@@ -10,7 +10,7 @@
   Control a sphere to avoid geometric 'evil' objects.
   <br />
   <br />
-  <a href="https://guibdbello.itch.io/shapezoid">Play Demo</a>
+  <a href="https://guibdbello.itch.io/shapezoid">Download Demo</a>
   ·
   <a href="https://github.com/GuiBDBello/Shapezoid/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
   ·
